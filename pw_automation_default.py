@@ -61,7 +61,7 @@ def write_to_file(val: str, domain:str):
         file.writelines( data )
            
 def browser_initialisation(playwright: sync_playwright):
-    browser = playwright.chromium.launch(headless = True)
+    browser = playwright.chromium.launch(headless = False)
     page : Page = browser.new_page()
     page.set_default_timeout(0)
     page.goto("https://pam.int.refinitiv.com/WebConsole//#!/passwordsafe/home")
@@ -74,9 +74,7 @@ def aws_browser_initialisation(playwright: sync_playwright):
     aws_page.goto("https://myapplications.microsoft.com/")
     return aws_page
 
-def open_and_login(page: Page, self):
-    self.label_info_1.insert(0.0,"Logging in...")
-    self.update()
+def open_and_login(page: Page):
     page.get_by_placeholder('Username').fill(username)
     page.get_by_placeholder('Password').fill(password)
     page.locator('.button-label.unselectable.ng-binding').click()
@@ -85,10 +83,8 @@ def get_frame(page: Page, frame_id: str):
     frame = page.frame_locator(frame_id)
     return frame
 
-def blm_access(frame: FrameLocator, self):
+def blm_access(frame: FrameLocator):
     frame.locator(".message").wait_for(state='visible')
-    self.label_info_1.insert(0.0,"Logged in...")
-    self.update()
     frame.locator(".btn.btn-secondary.Domain.Linked.Accounts").click()
     frame.locator("text='Click here to return all accounts'").click()
 
@@ -139,7 +135,7 @@ def generate_password():
 def proceed_choice():
     choice = take_input("Open AWS Console? (yes/no): ")
     if(choice.lower() == "yes"):
-        aws_page = aws_browser_initialisation()
+        aws_page = aws_browser_initialisation(playwright)
         aws_page_access(aws_page)
         aws_page.pause()
     elif(choice.lower() == "no"):
@@ -182,16 +178,14 @@ def pass_present(domain: str, page: Page, frame: FrameLocator):
     print("Email: " + au_username + host_domain)
     print("Password: " + aws_pwd)
     
-def run(playwright,self):
-    self.label_info_1.insert(0.0,"Started...")
-    self.update()
+def run(playwright):
     if(domain_choice.lower() == "qarft" or domain_choice.lower() == "dvrft" or domain_choice.lower() == "prrft"):
         start = time.time()
         avail_flag = domain_avail_flag(domain_choice) 
         page = browser_initialisation(playwright)
-        open_and_login(page, self)
+        open_and_login(page)
         frame = get_frame(page, "#passwordsafeIframe")
-        blm_access(frame, self)
+        blm_access(frame)
         check = check_availability(f'//*[@id="AccountsGrid"]/div[2]/table/tbody/tr[{avail_flag}]/td[10]/span[2]', frame)
         if check :
             frame.locator(f"//td[normalize-space()='{domain_choice}.int.inf0.net']").click()
